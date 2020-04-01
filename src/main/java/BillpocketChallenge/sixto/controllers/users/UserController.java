@@ -5,6 +5,7 @@ import BillpocketChallenge.sixto.entities.response.Status;
 import BillpocketChallenge.sixto.entities.users.UserEntity;
 import BillpocketChallenge.sixto.persistence.service.users.UserServices;
 import com.google.gson.Gson;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.impl.TextCodec;
 import org.slf4j.Logger;
@@ -17,10 +18,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Calendar;
 import java.util.Date;
 
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import javax.xml.bind.DatatypeConverter;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.Claims;
@@ -119,11 +124,36 @@ public class UserController {
     public ResponseEntity authenticateUser (@RequestBody String request,
                                             @RequestHeader HttpHeaders headers) throws Exception {
 
-        UserEntity newUser = convertJsonToClass(request, UserEntity.class);
-        if(!StringUtils.isEmpty(newUser)){
+        final String bearer = headers.getFirst("authorization");
 
+        UserEntity newUser = convertJsonToClass(request, UserEntity.class);
+
+        if (newUser == null || !bearer.startsWith("Bearer "))
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+
+        final String token = bearer.substring(7);
+        final Claims claims;
+        try {
+             claims = Jwts.parser()
+                    .setSigningKey(TextCodec.BASE64.encode(secret))
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (final JwtException e) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
-        return null;
+
+        if(!StringUtils.isEmpty(claims)){
+            Calendar calendar = Calendar.getInstance();
+            Date date = claims.getExpiration();
+
+            if(new Timestamp(calendar.getTimeInMillis()).after(new Timestamp(date.getTime())))
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+
+            UserEntity user = userServices.getUser(claims.getSubject());
+            if(user != null)
+                return new ResponseEntity(user.stringify(), HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
     }
 
     /**
