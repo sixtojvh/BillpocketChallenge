@@ -1,9 +1,12 @@
 package BillpocketChallenge.sixto.controllers.users;
 
+import BillpocketChallenge.sixto.entities.response.JsonWebToken;
 import BillpocketChallenge.sixto.entities.response.Status;
 import BillpocketChallenge.sixto.entities.users.UserEntity;
 import BillpocketChallenge.sixto.persistence.service.users.UserServices;
 import com.google.gson.Gson;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.impl.TextCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +17,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+
+import javax.xml.bind.DatatypeConverter;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.Claims;
 
 @RestController
 public class UserController {
@@ -21,6 +31,9 @@ public class UserController {
     @Value("${APP.NAME}")
     private String APP_NAME;
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
+
+    @Value("${jwt.secret}")
+    private String secret;
 
     @Autowired
     private UserServices userServices;
@@ -69,12 +82,34 @@ public class UserController {
                                            @RequestHeader HttpHeaders headers) throws Exception {
 
 
-        UserEntity newUser = convertJsonToClass(request, UserEntity.class);
-        if(!StringUtils.isEmpty(newUser)){
+        UserEntity user = convertJsonToClass(request, UserEntity.class);
+        JsonWebToken token = null;
+        Status status = new Status();
 
-           // UserEntity user = userServices.getUser()
+        if(!StringUtils.isEmpty(user)) {
+
+            if(this.validateDataJwt(user)){
+                final boolean existUser = userServices.existUser(user.getUsername(), user.getPassword());
+                if (!existUser) {
+                    return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                }
+
+                final Instant now = Instant.now();
+
+                final String jwt = Jwts.builder()
+                        .setSubject(user.getUsername())
+                        .setIssuedAt(Date.from(now))
+                        .setExpiration(Date.from(now.plus(1, ChronoUnit.DAYS)))
+                        .signWith(SignatureAlgorithm.HS256, TextCodec.BASE64.encode(secret))
+                        .compact();
+
+                token = new JsonWebToken();
+                token.setToken(jwt);
+                return new ResponseEntity(token.stringify(), HttpStatus.OK);
+            }
         }
-        return new ResponseEntity("Error no controlado en el proceso", HttpStatus.BAD_REQUEST);
+
+        return new ResponseEntity(status.stringify(), HttpStatus.BAD_REQUEST);
     }
 
     /**
@@ -101,6 +136,13 @@ public class UserController {
      */
     public static <T> T convertJsonToClass(String objJson, Class<T> clazz) {
         return new Gson().fromJson(objJson, clazz);
+    }
+
+    public boolean validateDataJwt(UserEntity user){
+        if(StringUtils.isEmpty(user.getUsername()) || StringUtils.isEmpty(user.getPassword()))
+            return false;
+        else
+            return true;
     }
 
 }
