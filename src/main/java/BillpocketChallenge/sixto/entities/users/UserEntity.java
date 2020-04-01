@@ -15,10 +15,10 @@ import java.util.List;
 
 @Entity
 @Table(name = "User", schema = "users")
-@NamedQuery(name = "userEntity.findAll", query = "SELECT a from userEntity a")
+@NamedQuery(name = "UserEntity.findAll", query = "SELECT a from UserEntity a")
 @Where(clause = "soft_delete = 0")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class userEntity implements Serializable {
+public class UserEntity implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -26,17 +26,17 @@ public class userEntity implements Serializable {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long ID;
 
-    private String Nombre;
-    private String Completo;
-    private String Username;
-    private String Password;
-    private Timestamp FechaDeNacimiento;
-    private String Sexo;
-    private boolean softDelete;
+    private String nombreCompleto;
 
-    public static long getSerialVersionUID() {
-        return serialVersionUID;
-    }
+    private String username;
+
+    private String password;
+
+    private Timestamp fechaDeNacimiento;
+
+    private String sexo;
+
+    private boolean softDelete;
 
     public long getID() {
         return ID;
@@ -46,52 +46,44 @@ public class userEntity implements Serializable {
         this.ID = ID;
     }
 
-    public String getNombre() {
-        return Nombre;
+    public String getNombreCompleto() {
+        return nombreCompleto;
     }
 
-    public void setNombre(String nombre) {
-        Nombre = nombre;
-    }
-
-    public String getCompleto() {
-        return Completo;
-    }
-
-    public void setCompleto(String completo) {
-        Completo = completo;
+    public void setNombreCompleto(String nombreCompleto) {
+        this.nombreCompleto = nombreCompleto;
     }
 
     public String getUsername() {
-        return Username;
+        return username;
     }
 
     public void setUsername(String username) {
-        Username = username;
+        this.username = username;
     }
 
     public String getPassword() {
-        return Password;
+        return password;
     }
 
     public void setPassword(String password) {
-        Password = password;
+        this.password = password;
     }
 
     public Timestamp getFechaDeNacimiento() {
-        return FechaDeNacimiento;
+        return fechaDeNacimiento;
     }
 
     public void setFechaDeNacimiento(Timestamp fechaDeNacimiento) {
-        FechaDeNacimiento = fechaDeNacimiento;
+        this.fechaDeNacimiento = fechaDeNacimiento;
     }
 
     public String getSexo() {
-        return Sexo;
+        return sexo;
     }
 
     public void setSexo(String sexo) {
-        Sexo = sexo;
+        this.sexo = sexo;
     }
 
     public boolean isSoftDelete() {
@@ -102,8 +94,8 @@ public class userEntity implements Serializable {
         this.softDelete = softDelete;
     }
 
-    public List<userEntity> toList (String list) throws IOException {
-        return new ObjectMapper().readValue(list, new TypeReference<List<userEntity>>(){});
+    public List<UserEntity> toList (String list) throws IOException {
+        return new ObjectMapper().readValue(list, new TypeReference<List<UserEntity>>(){});
     }
 
     public String toJson () throws JsonProcessingException {
