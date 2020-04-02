@@ -1,16 +1,19 @@
 package BillpocketChallenge.sixto.persistence.service.users;
 
+import BillpocketChallenge.sixto.entities.Request.UserRequest;
 import BillpocketChallenge.sixto.entities.response.JsonWebToken;
 import BillpocketChallenge.sixto.entities.users.UserEntity;
 import BillpocketChallenge.sixto.persistence.repositories.OTPService.OTPService;
 import BillpocketChallenge.sixto.persistence.repositories.users.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.RequestEntity;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 
 @Service
@@ -23,9 +26,8 @@ public class UserServicesImpl implements UserServices {
     private OTPService otpService;
 
     @Override
-    public boolean createUser(UserEntity newUser){
-        Calendar current = Calendar.getInstance();
-        LocalDate date = LocalDate.now();
+    public boolean createUser(UserRequest newUser){
+        LocalDate date = LocalDate.parse(newUser.getFechaDeNacimiento());
 
         try {
             UserEntity userResponse = null;
@@ -33,8 +35,12 @@ public class UserServicesImpl implements UserServices {
 
 
             if (!userRepository.existsByUsername(newUser.getUsername())){
-                newUser.setFechaDeNacimiento(Timestamp.valueOf(date.atStartOfDay()));
-                newUser.setSoftDelete(false);
+                UserEntity user = new UserEntity();
+                user.setNombreCompleto(newUser.getNombreCompleto());
+                user.setUsername(newUser.getUsername());
+                user.setFechaDeNacimiento(Timestamp.valueOf(date.atStartOfDay()));
+                user.setSexo(newUser.getSexo());
+                user.setSoftDelete(false);
 
 
                 /**
@@ -46,11 +52,11 @@ public class UserServicesImpl implements UserServices {
                 * */
                 String pass = otpService.hotp(
                         newUser.getPassword(),
-                        newUser.getFechaDeNacimiento().getTime(),
+                        user.getFechaDeNacimiento().getTime(),
                         "HmacSHA256");
 
-                newUser.setPassword(pass);
-                userResponse = userRepository.save(newUser);
+                user.setPassword(pass);
+                userResponse = userRepository.save(user);
             }
 
             if (userResponse != null)

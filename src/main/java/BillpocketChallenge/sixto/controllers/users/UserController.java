@@ -1,5 +1,6 @@
 package BillpocketChallenge.sixto.controllers.users;
 
+import BillpocketChallenge.sixto.entities.Request.UserRequest;
 import BillpocketChallenge.sixto.entities.response.JsonWebToken;
 import BillpocketChallenge.sixto.entities.response.Status;
 import BillpocketChallenge.sixto.entities.users.UserEntity;
@@ -24,9 +25,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Date;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
-import javax.xml.bind.DatatypeConverter;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.Claims;
 
@@ -52,7 +50,7 @@ public class UserController {
 
         Status status = new Status();
 
-        UserEntity newUser = convertJsonToClass(request, UserEntity.class);
+        UserRequest newUser = convertJsonToClass(request, UserRequest.class);
         if (!StringUtils.isEmpty(newUser)) {
 
             boolean response = userServices.createUser(newUser);
